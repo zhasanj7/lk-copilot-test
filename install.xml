@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<modification>
+  <!-- IBS-LK v5.8.3: Powerful Status Mapping Sync Fix + 20/50/100 Load Safety. -->
+  <name>IBS-LK ERP v5.8.3 Vendor Fulfillment Row UX</name>
+  <code>ibs_lk_v573_powerful_status_mapping_sync_fix</code>
+  <version>5.8.2</version>
+  <author>IBS-LK</author>
+  <link>https://localhost</link>
+  <file path="admin/controller/common/column_left.php">
+    <operation>
+      <search><![CDATA[if ($this->user->hasPermission('access', 'catalog/product')) {]]></search>
+      <add position="before"><![CDATA[
+        // IBS-LK Supplier Management ERP - single guarded top-level admin menu
+        $ibs_lk_menu_exists = false;
+        if (!empty($data['menus']) && is_array($data['menus'])) {
+            foreach ($data['menus'] as $ibs_lk_existing_menu) {
+                if ((isset($ibs_lk_existing_menu['id']) && $ibs_lk_existing_menu['id'] == 'menu-ibs-lk') || (isset($ibs_lk_existing_menu['name']) && $ibs_lk_existing_menu['name'] == 'IBS-LK')) {
+                    $ibs_lk_menu_exists = true;
+                    break;
+                }
+            }
+        }
+        if (!$ibs_lk_menu_exists && ($this->user->hasPermission('access', 'extension/module/ibs_lk_overview') || $this->user->hasPermission('access', 'extension/module/ibs_lk'))) {
+            $ibs_lk_children = array();
+            $ibs_lk_items = array(
+                array('text' => 'All Orders', 'route' => 'extension/module/ibs_lk_all_orders', 'permission' => 'extension/module/ibs_lk_orders'),
+                array('text' => 'Vendor Fulfillment', 'route' => 'extension/module/ibs_lk_orders', 'permission' => 'extension/module/ibs_lk_orders'),
+                array('text' => 'Dispatch Batches', 'route' => 'extension/module/ibs_lk_dispatch_batches'),
+                array('text' => 'Vendor Returns', 'route' => 'extension/module/ibs_lk_supplier_return'),
+                array('text' => 'Owner Return', 'route' => 'extension/module/ibs_lk_owner_return'),
+                array('text' => 'Product Control', 'route' => 'extension/module/ibs_lk_product_cost_stock'),
+                array('text' => 'Payable & Settlement', 'route' => 'extension/module/ibs_lk_payable'),
+                array('text' => 'Manual Order', 'route' => 'extension/module/ibs_lk_manual_order'),
+                array('text' => 'Supplier Account / Ledger', 'route' => 'extension/module/ibs_lk_supplier_account'),
+                array('text' => 'Reports', 'route' => 'extension/module/ibs_lk_reports'),
+                array('text' => 'Overview', 'route' => 'extension/module/ibs_lk_overview'),
+                array('text' => 'Settings / Configuration', 'route' => 'extension/module/ibs_lk_settings')
+            );
+            foreach ($ibs_lk_items as $ibs_lk_item) {
+                
+                $ibs_lk_permission_route = isset($ibs_lk_item['permission']) ? $ibs_lk_item['permission'] : $ibs_lk_item['route'];
+                if ($this->user->hasPermission('access', $ibs_lk_permission_route) || $this->user->hasPermission('access', 'extension/module/ibs_lk')) {
+                    $ibs_lk_children[] = array('name' => $ibs_lk_item['text'], 'href' => $this->url->link($ibs_lk_item['route'], 'user_token=' . $this->session->data['user_token'], true), 'children' => array());
+                }
+            }
+            $data['menus'][] = array('id' => 'menu-ibs-lk', 'icon' => 'fa-industry', 'name' => 'IBS-LK', 'href' => '', 'children' => $ibs_lk_children);
+        }
+      ]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[return $this->load->view('common/column_left', $data);]]></search>
+      <add position="before"><![CDATA[
+        // IBS-LK v1.4.71: final safety cleanup. Old enabled OCMOD builds may have already injected duplicate IBS-LK menus.
+        if (!empty($data['menus']) && is_array($data['menus'])) {
+            $ibs_lk_clean_menus = array();
+            $ibs_lk_seen_menu = false;
+            foreach ($data['menus'] as $ibs_lk_menu) {
+                $ibs_lk_is_menu = ((isset($ibs_lk_menu['id']) && $ibs_lk_menu['id'] == 'menu-ibs-lk') || (isset($ibs_lk_menu['name']) && $ibs_lk_menu['name'] == 'IBS-LK'));
+                if ($ibs_lk_is_menu) {
+                    if ($ibs_lk_seen_menu) {
+                        continue;
+                    }
+                    $ibs_lk_seen_menu = true;
+                    $ibs_lk_menu['id'] = 'menu-ibs-lk';
+                    $ibs_lk_menu['name'] = 'IBS-LK';
+                }
+                $ibs_lk_clean_menus[] = $ibs_lk_menu;
+            }
+            $data['menus'] = $ibs_lk_clean_menus;
+        }
+      ]]></add>
+    </operation>
+  </file>
+
+  <file path="admin/controller/catalog/product.php">
+    <operation error="skip">
+      <search><![CDATA[$data['cancel'] = $this->url->link('catalog/product', 'user_token=' . $this->session->data['user_token'] . $url, true);]]></search>
+      <add position="before"><![CDATA[
+		if (!isset($url)) {
+			$url = '';
+		}
+      ]]></add>
+    </operation>
+  </file>
+</modification>
